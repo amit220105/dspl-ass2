@@ -2,34 +2,30 @@ package hadoop.examples;
 
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class BigramDecade {
-    public static class MapperClass extends Mapper<LongWritable,Text,Text ,LongWritable> {
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         private final Text outKey = new Text();
         private final LongWritable outValue = new LongWritable();
         Set<String> stopWords;
@@ -68,21 +64,24 @@ public class BigramDecade {
             }
         }
         @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException,  InterruptedException {
-            String ngram = key.toString().trim();
-            String[] words = ngram.split("\\s+");
-            if (words.length != 2) return;
-                 
-            String line = value.toString();
-            String[] parts = line.split("\t");
-            if (parts.length <2)
-                return;
-            int year;
-            long count;
-            try{
-                year = Integer.parseInt(parts[0].trim());
-                count = Long.parseLong(parts[1].trim());
-            }catch (NumberFormatException  e){return;}
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+                String line = value.toString().trim();
+                String[] parts = line.split("\t");
+                if (parts.length < 3) return;   // expected: ngram \t year \t count ( \t volumeCount )
+
+                String ngram = parts[0].trim();
+                String[] words = ngram.split("\\s+");
+                if (words.length != 2) return;
+
+                int year;
+                long count;
+                try {
+                    year = Integer.parseInt(parts[1].trim());
+                    count = Long.parseLong(parts[2].trim());
+                } catch (NumberFormatException e) {
+                    return;
+                }
+
             int decade = (year/10) *10;
             String decade_str = decade + "";
             if (stopWords.contains(words[0]) || stopWords.contains(words[1])){
@@ -145,13 +144,11 @@ public class BigramDecade {
         }
     }
 
-    public static class PartitionerClass extends Partitioner<Text,IntWritable> {
-
+    public static class PartitionerClass extends Partitioner<Text, LongWritable> {
         @Override
-        public int getPartition(Text key, IntWritable value, int numReducers) {
-            return key.hashCode() % numReducers;
+        public int getPartition(Text key, LongWritable value, int numReducers) {
+            return (key.hashCode() & Integer.MAX_VALUE) % numReducers;
         }
-
     }
 
 
@@ -169,7 +166,7 @@ public class BigramDecade {
         job.setJarByClass(BigramDecade.class);
 
         job.setMapperClass(BigramDecade.MapperClass.class);
-        job.setCombinerClass(BigramDecade.ReducerClass.class);
+        job.setCombinerClass(BigramDecade.CombinerClass.class);
         job.setReducerClass(BigramDecade.ReducerClass.class);
 
         job.setMapOutputKeyClass(Text.class);
