@@ -1,4 +1,4 @@
-
+package hadoop.examples;
 
 import java.io.IOException;
 
@@ -135,7 +135,7 @@ public class UnigramDecade {
      job.setOutputKeyClass(Text.class);
      job.setOutputValueClass(LongWritable.class);
 
-     job.setInputFormatClass(SequenceFileInputFormat.class);
+     job.setInputFormatClass(TextInputFormat.class);
      job.setOutputFormatClass(TextOutputFormat.class);
 
      FileInputFormat.addInputPath(job, new Path(args[0]));

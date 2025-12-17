@@ -1,13 +1,19 @@
+package hadoop.examples;
 
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -30,29 +36,41 @@ public class BigramDecade {
 
         @Override
         public void setup(Context context)  throws IOException, InterruptedException {
-            stopWords = new HashSet<String>();
+            URI[] cacheFiles = context.getCacheFiles();
+            if (cacheFiles == null || cacheFiles.length < 2) {
+                throw new IOException("Stopwords cache files missing. Expected 2 files (eng + heb).");
+            }
+
+            stopWords = new HashSet<>();
             Configuration conf = context.getConfiguration();
-            String engPath = conf.get("stopwords.en.path");
-            String hebPath = conf.get("stopwords.heb.path");
-            loadStopWords(engPath,stopWords);
-            loadStopWords(hebPath,stopWords);
-        }
-        private void loadStopWords(String path, Set<String> set) throws IOException {
-            if (path == null || path.isEmpty()) return;
-            try(BufferedReader br = new BufferedReader(new FileReader(path))){
-                String line;
-                while ((line = br.readLine()) != null){
-                    line = line.trim();
-                    if (!line.isEmpty())
-                        set.add(line);
+
+            for (URI uri : cacheFiles) {
+                Path p = new Path(uri);
+
+               
+                FileSystem fs = p.getFileSystem(conf);
+
+                try (FSDataInputStream in = fs.open(p);
+                    BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        line = line.trim();
+                        if (!line.isEmpty() && !line.startsWith("#")) {
+                            stopWords.add(line);
+                        }
+                    }
                 }
             }
-        }
 
+            if (stopWords.isEmpty()) {
+                throw new IOException("Stopwords set is empty after reading cache files. Check file contents/URIs.");
+            }
+        }
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException,  InterruptedException {
             String line = value.toString();
-            String[] parts = line.split("\t");
+            String[] parts = line.split("\\s+");
             if (parts.length <3)
                 return;
             String[] words;
@@ -158,11 +176,14 @@ public class BigramDecade {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
 
-        job.setInputFormatClass(SequenceFileInputFormat.class);
+        job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+        job.addCacheFile(new java.net.URI(args[2]));
+        job.addCacheFile(new java.net.URI(args[3]));
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
