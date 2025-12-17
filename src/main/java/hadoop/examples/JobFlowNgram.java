@@ -19,7 +19,8 @@ public class JobFlowNgram {
                 "Usage: JobFlowNgram <region> <bucket> <unigram-path> <bigram-path>");
             System.exit(1);
         }
-
+            System.err.println(
+                "1");
         String regionName = args[0];        
         String bucket = args[1];        
         String oneGram = args[2];        
@@ -47,28 +48,34 @@ public class JobFlowNgram {
 
       
 
+                            System.err.println(
+                "1");
         // Job 1: UnigramDecade
         HadoopJarStepConfig job1Jar = new HadoopJarStepConfig()
                 .withJar(jarPath)
                 .withMainClass("hadoop.examples.UnigramDecade")
                 .withArgs(oneGram, job1Out);
-
+            System.err.println(
+                "1");
         StepConfig job1Step = new StepConfig()
                 .withName("unigram-decade")
                 .withHadoopJarStep(job1Jar)
                 .withActionOnFailure("TERMINATE_JOB_FLOW");
-
+            System.err.println(
+                "1");
         // Job 2: BigramDecade (with stopwords)
         HadoopJarStepConfig job2Jar = new HadoopJarStepConfig()
                 .withJar(jarPath)
                 .withMainClass("hadoop.examples.BigramDecade")
                 .withArgs(twoGram, job2Out, engStop, hebStop);
-
+            System.err.println(
+                "1");
         StepConfig job2Step = new StepConfig()
                 .withName("bigram-decade-stopwords")
                 .withHadoopJarStep(job2Jar)
                 .withActionOnFailure("TERMINATE_JOB_FLOW");
-
+            System.err.println(
+                "1");
         // Job 3a: JoinLeftUnigram
         HadoopJarStepConfig job3aJar = new HadoopJarStepConfig()
                 .withJar(jarPath)
@@ -79,7 +86,8 @@ public class JobFlowNgram {
                 .withName("join-left-unigram")
                 .withHadoopJarStep(job3aJar)
                 .withActionOnFailure("TERMINATE_JOB_FLOW");
-
+            System.err.println(
+                "1");
         // Job 3b: JoinRightUnigramAndTotal
         HadoopJarStepConfig job3bJar = new HadoopJarStepConfig()
                 .withJar(jarPath)
@@ -102,7 +110,8 @@ public class JobFlowNgram {
                 .withHadoopJarStep(job4Jar)
                 .withActionOnFailure("TERMINATE_JOB_FLOW");
 
-        
+                    System.err.println(
+                "2");
 
         JobFlowInstancesConfig instances = new JobFlowInstancesConfig()
                 .withInstanceCount(2)

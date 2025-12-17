@@ -69,17 +69,19 @@ public class BigramDecade {
         }
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException,  InterruptedException {
+            String ngram = key.toString().trim();
+            String[] words = ngram.split("\\s+");
+            if (words.length != 2) return;
+                 
             String line = value.toString();
-            String[] parts = line.split("\\s+");
-            if (parts.length <3)
+            String[] parts = line.split("\t");
+            if (parts.length <2)
                 return;
-            String[] words;
             int year;
             long count;
             try{
-                words = parts[0].split(" ");
-                year = Integer.parseInt(parts[1]);
-                count = Long.parseLong(parts[2]);
+                year = Integer.parseInt(parts[0].trim());
+                count = Long.parseLong(parts[1].trim());
             }catch (NumberFormatException  e){return;}
             int decade = (year/10) *10;
             String decade_str = decade + "";
@@ -173,10 +175,11 @@ public class BigramDecade {
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
 
+
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
 
-        job.setInputFormatClass(TextInputFormat.class);
+        job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
