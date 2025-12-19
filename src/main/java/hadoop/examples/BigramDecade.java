@@ -166,7 +166,7 @@ public class BigramDecade {
         job.setJarByClass(BigramDecade.class);
 
         job.setMapperClass(BigramDecade.MapperClass.class);
-        job.setCombinerClass(BigramDecade.CombinerClass.class);
+        //job.setCombinerClass(BigramDecade.CombinerClass.class);
         job.setReducerClass(BigramDecade.ReducerClass.class);
 
         job.setMapOutputKeyClass(Text.class);
